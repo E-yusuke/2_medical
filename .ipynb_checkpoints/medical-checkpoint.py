@@ -11,9 +11,6 @@ import tqdm as tqdm
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-import matplotlib.pyplot as plt
-import numpy as np
-
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 torch.manual_seed(777)
 if device == 'cuda':
@@ -45,17 +42,6 @@ val_loader = DataLoader(
 test_loader = DataLoader(
     test_imgs, batch_size=len(test_imgs), shuffle=False)
 
-def imshow(img):
-    img = img / 2 + 0.5     
-    npimg = img.numpy()
-    plt.imshow(np.transpose(npimg, (1, 2, 0)))
-    plt.show()
-dataiter = iter(train_loader)
-images, labels = dataiter.next()
-# 画像の表示
-imshow(torchvision.utils.make_grid(images))
-# ラベルの表示
-print(' '.join('%5s' % labels[labels[j]] for j in range(8)))
 print(train_imgs[0][0].view(train_imgs[0][0].shape[0], -1))
 print(train_imgs[0][0][0])
 print(len(train_loader))
@@ -97,7 +83,7 @@ optimizer=optim.SGD(net.parameters(), lr=0.01)
 criterion = nn.CrossEntropyLoss().to(device)
 
 total_batch = len(train_loader)
-num_epochs = 10
+num_epochs = 6
 
 train_loss_list=[]
 val_loss_list = []
@@ -116,9 +102,9 @@ for epoch in range(num_epochs):
       loss.backward()
       optimizer.step()
         
-      train_loss += loss.detach().cpu().item()
+      train_loss += loss.item()
       pred = torch.argmax(out, 1) == labels
-      train_acc += pred.detach().cpu().sum()
+      train_acc += pred.sum()
         
     
       if (i+1) % 100 ==0:
@@ -135,9 +121,9 @@ for epoch in range(num_epochs):
             label = label.to(device)
             val_out = net(imgs)
             v_loss = criterion(val_out, label)
-            val_loss += v_loss.detach().cpu()
+            val_loss += v_loss
             val_pred = torch.argmax(val_out, 1) == label
-            val_acc += val_pred.detach().cpu().sum()
+            val_acc += val_pred.sum()
                     
         print("epoch: {}/{}, step: {}/{}, train loss: {:.4f}, val loss: {:.4f}, train acc: {:.2f}, val acc: {:.2f}".format(
             epoch+1, num_epochs, i+1, total_batch, train_loss/100, val_loss/len(val_loader), train_acc/100/50, val_acc/len(val_loader.dataset)
@@ -151,10 +137,10 @@ for epoch in range(num_epochs):
         train_acc = 0.0
 
 
-
+import matplotlib.pyplot as plt
 
 plt.figure(figsize = (16, 9))
-x_range = list(range(len(train_loss_list)))
+x_range = range(len(train_loss_list))
 plt.plot(x_range, train_loss_list, label="train")
 plt.plot(x_range, val_loss_list, label="val")
 plt.legend()
@@ -168,7 +154,6 @@ plt.plot(x_range, val_acc_list, label="val")
 plt.legend()
 plt.xlabel("epoch")
 plt.ylabel("accuracy")
-plt.show()
 
 with torch.no_grad():
     corr_num = 0
